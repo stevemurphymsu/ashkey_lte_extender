@@ -40,7 +40,7 @@ class AshkeyLTEApi:
         async with self.session.post(self.base_url("login"), json=payload) as response:
             if response.status == 200:
                 data = await response.json()
-                self.token = data.get("authtoken")
+                self.token = data.get("Authtoken")
                 self.token_expiry = int(time.time()) + 1800
                 self.xsrf = response.cookies.get("X-XSRF-TOKEN")
 
@@ -75,10 +75,10 @@ class AshkeyLTEApi:
         self.reboot_defs = await self.fetch_data(self, endpoint="data/reboot.json") 
             
     async def get_alarm_log(self) -> dict:
-        return await self.fetch_data(self, endpoint="alarmLog")
+        return await self.fetch_data(self, "alarmLog")
         
     async def get_reboot_log(self) -> dict:
-        return await self.fetch_data(self, endpoint="rebootLog")
+        return await self.fetch_data(self, "rebootLog")
 
     async def get_about_status(self) -> dict:
-        return await self.fetch_data(self, endpoint="aboutStatus")
+        return await self.fetch_data(self, "aboutStatus")

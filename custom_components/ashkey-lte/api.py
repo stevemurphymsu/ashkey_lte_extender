@@ -71,10 +71,8 @@ class AshkeyLTEApi:
             return {}
 
     async def cache_metadata(self):
-        alarm_url = "/data/alarm.json"
-        reboot_url = "/data/reboot.json"
-        self.alarm_defs = await self.fetch_data(self, endpoint=alarm_url)
-        self.reboot_defs = await self.fetch_data(self, endpoint=reboot_url) 
+        self.alarm_defs = await self.fetch_data(self, endpoint="data/alarm.json")
+        self.reboot_defs = await self.fetch_data(self, endpoint="data/reboot.json") 
             
     async def get_alarm_log(self) -> dict:
         return await self.fetch_data(self, endpoint="alarmLog")

@@ -30,7 +30,9 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         "last_reboot": None
     }
 
-    await hass.config_entries.async_forward_entry_setups(hass, entry, "sensor")
+    hass.async_create_task(
+        hass.config_entries.async_forward_entry_setup(entry, "sensor")
+    )
 
     async def handle_refresh(call):
         await api.authenticate()

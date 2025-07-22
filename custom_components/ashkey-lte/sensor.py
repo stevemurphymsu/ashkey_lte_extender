@@ -79,7 +79,7 @@ async def async_setup_entry(hass, config_entry, async_add_entities):
     coordinator = DataUpdateCoordinator(
         hass,
         _LOGGER,
-        name="ashkey_lte",
+        name="ashkey-lte",
         update_method=async_update_data,
         update_interval=timedelta(seconds=DEFAULT_SCAN_INTERVAL),
     )
@@ -96,7 +96,7 @@ class AshkeyLTESensor(CoordinatorEntity, SensorEntity):
         super().__init__(coordinator)
         self._key = key
         self._attr_name = name
-        self._attr_unique_id = f"ashkey_lte_{key}"
+        self._attr_unique_id = f"ashkey-lte_{key}"
 
     @property
     def native_value(self):

@@ -2,7 +2,7 @@
   "domain": "ashkey_lte",
   "name": "ASHKEY LTE Network Extender",
   "version": "1.0.0",
-  "documentation": "https://github.com/YOUR_USERNAME/ashkey_lte",
+  "documentation": "https://github.com/stevemurphymsu/ashkey_lte_extender",
   "requirements": [],
   "dependencies": [],
   "codeowners": ["@stevemurphymsu"],

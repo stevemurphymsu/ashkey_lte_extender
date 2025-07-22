@@ -87,6 +87,6 @@ Full documentation available in the GitHub repo including setup, token flow, tro
 
 ## 👤 Codeowners
 
-Made by [@YOUR_USERNAME] – femtocell obsessive, diagnostics-obsessed, and loving LTE visibility.
+Made by [@stevemurphymsu] – femtocell obsessive, diagnostics-obsessed, and loving LTE visibility.
 
 PRs welcome!

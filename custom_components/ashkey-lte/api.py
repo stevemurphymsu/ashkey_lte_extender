@@ -26,6 +26,7 @@ class AshkeyLTEApi:
             "Referer": f"{self.base_url}/"
         }
     
+    @property
     def base_url(self, path=""):
         if path.startswith("data/"):
             return f"http://{self.ip}/{path}"  # direct root path

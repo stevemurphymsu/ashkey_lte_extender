@@ -98,4 +98,4 @@ class AshkeyLTEApi:
         url = f"{self.base_url}/webapi/aboutStatus"
         async with self.session.get(url, headers=self.headers) as resp:
             resp.raise_for_status()
-            return await 
+            return await resp.json()

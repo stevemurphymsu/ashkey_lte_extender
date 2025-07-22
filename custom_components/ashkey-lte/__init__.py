@@ -2,6 +2,7 @@ from homeassistant.core import HomeAssistant
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.helpers.typing import ConfigType
 from .const import DOMAIN
+from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from .api import AshkeyLTEApi
 
 async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
@@ -11,9 +12,11 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     ip = entry.data["ip_address"]
     password = entry.data["password"]
 
-    api = AshkeyLTEApi(ip, password)
-    api.authenticate()
-    api.cache_metadata()
+    session = async_get_clientsession(hass)
+    api = AshkeyLTEApi(ip, password, session)
+
+    await api.authenticate()
+    await api.cache_metadata()
 
     hass.data.setdefault(DOMAIN, {})
     hass.data[DOMAIN] = {
@@ -29,11 +32,11 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     await hass.config_entries.async_forward_entry_setup(entry, "sensor")
 
     async def handle_refresh(call):
-        api.authenticate()
+        await api.authenticate()
         hass.data[DOMAIN]["auth_token"] = api.token
 
     async def handle_reload_metadata(call):
-        api.cache_metadata()
+        await api.cache_metadata()
         hass.data[DOMAIN]["alarm_defs"] = api.alarm_defs
         hass.data[DOMAIN]["reboot_defs"] = api.reboot_defs
 

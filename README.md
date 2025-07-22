@@ -79,9 +79,12 @@ Use these in automations, logbook, or persistent notifications.
 
 ---
 
-## 📚 Docs
+## 📚 Documentation
 
 Full documentation available in the GitHub repo including setup, token flow, troubleshooting, and extensibility tips.
+
+- [Full API Reference →](docs/api.md)
+
 
 ---
 

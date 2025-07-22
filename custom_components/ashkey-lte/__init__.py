@@ -1,13 +1,18 @@
+from __future__ import annotations
+
+import asyncio
+import logging
+from aiohttp import ClientError
+
 from homeassistant.config_entries import ConfigEntry
-from homeassistant.core import HomeAssistant
-from homeassistant.helpers.typing import ConfigType
+from homeassistant.core import HomeAssistant, ServiceCall
+from homeassistant.exceptions import ConfigEntryNotReady
+from homeassistant.helpers.aiohttp_client import async_get_clientsession
 
 from .const import DOMAIN
-from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from .api import AshkeyLTEApi
 
-async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
-    return True
+_LOGGER = logging.getLogger(__name__)
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     ip = entry.data["ip_address"]
@@ -16,8 +21,18 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     session = async_get_clientsession(hass)
     api = AshkeyLTEApi(ip, password, session)
 
-    await api.authenticate()
-    await api.cache_metadata()
+    try:
+        await asyncio.wait_for(api.authenticate(), timeout=10)
+        await asyncio.wait_for(api.cache_metadata(), timeout=10)
+    except (ClientError, asyncio.TimeoutError, TimeoutError) as net_err:
+        _LOGGER.warning("ASHKEY network error during setup: %s", net_err)
+        raise ConfigEntryNotReady("ASHKEY device unreachable or network timeout") from net_err
+    except (ValueError, KeyError) as parse_err:
+        _LOGGER.warning("ASHKEY response parsing error during setup: %s", parse_err)
+        raise ConfigEntryNotReady("ASHKEY returned invalid metadata") from parse_err
+    except Exception as unknown:
+        _LOGGER.exception("Unhandled exception during ASHKEY setup")
+        raise ConfigEntryNotReady("Unexpected error during setup") from unknown
 
     hass.data.setdefault(DOMAIN, {})
     hass.data[DOMAIN] = {
@@ -34,14 +49,20 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         hass.config_entries.async_forward_entry_setups(entry, ["sensor"])
     )
 
-    async def handle_refresh(call):
-        await api.authenticate()
-        hass.data[DOMAIN]["auth_token"] = api.token
+    async def handle_refresh(call: ServiceCall) -> None:
+        try:
+            await asyncio.wait_for(api.authenticate(), timeout=10)
+            hass.data[DOMAIN]["auth_token"] = api.token
+        except Exception as e:
+            _LOGGER.warning("ASHKEY refresh_token service failed: %s", e)
 
-    async def handle_reload_metadata(call):
-        await api.cache_metadata()
-        hass.data[DOMAIN]["alarm_defs"] = api.alarm_defs
-        hass.data[DOMAIN]["reboot_defs"] = api.reboot_defs
+    async def handle_reload_metadata(call: ServiceCall) -> None:
+        try:
+            await asyncio.wait_for(api.cache_metadata(), timeout=10)
+            hass.data[DOMAIN]["alarm_defs"] = api.alarm_defs
+            hass.data[DOMAIN]["reboot_defs"] = api.reboot_defs
+        except Exception as e:
+            _LOGGER.warning("ASHKEY reload_metadata service failed: %s", e)
 
     hass.services.async_register(DOMAIN, "refresh_token", handle_refresh)
     hass.services.async_register(DOMAIN, "reload_metadata", handle_reload_metadata)

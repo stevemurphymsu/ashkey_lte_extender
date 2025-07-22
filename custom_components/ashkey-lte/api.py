@@ -17,6 +17,15 @@ class AshkeyLTEApi:
         self.alarm_defs = {}
         self.reboot_defs = {}
 
+    @property
+    def headers(self):
+        return {
+            "Content-Type": "application/json",
+            "Authtoken": self.token or "",
+            "X-Requested-With": "XMLHttpRequest",
+            "Referer": f"{self.base_url}/"
+        }
+    
     def base_url(self, path=""):
         if path.startswith("data/"):
             return f"http://{self.ip}/{path}"  # direct root path
@@ -62,5 +71,31 @@ class AshkeyLTEApi:
             return {}
 
     async def cache_metadata(self):
-        self.alarm_defs = await self.fetch_data(METADATA_PATHS["alarms"])
-        self.reboot_defs = await self.fetch_data(METADATA_PATHS["reboots"])
+        alarm_url = f"{self.base_url}/data/alarm.json"
+        reboot_url = f"{self.base_url}/data/reboot.json"
+
+        async with self.session.get(alarm_url, headers=self.headers) as a:
+            a.raise_for_status()
+            self.alarm_defs = await a.json()
+
+        async with self.session.get(reboot_url, headers=self.headers) as r:
+            r.raise_for_status()
+            self.reboot_defs = await r.json()
+            
+    async def get_alarm_log(self) -> dict:
+        url = f"{self.base_url}/webapi/alarmLog"
+        async with self.session.get(url, headers=self.headers) as resp:
+            resp.raise_for_status()
+            return await resp.json()
+
+    async def get_reboot_log(self) -> dict:
+        url = f"{self.base_url}/webapi/rebootLog"
+        async with self.session.get(url, headers=self.headers) as resp:
+            resp.raise_for_status()
+            return await resp.json()
+
+    async def get_about_status(self) -> dict:
+        url = f"{self.base_url}/webapi/aboutStatus"
+        async with self.session.get(url, headers=self.headers) as resp:
+            resp.raise_for_status()
+            return await 

@@ -71,14 +71,14 @@ class AshkeyLTEApi:
             return {}
 
     async def cache_metadata(self):
-        self.alarm_defs = await self.fetch_data(self, "data/alarm.json")
-        self.reboot_defs = await self.fetch_data(self, "data/reboot.json") 
+        self.alarm_defs = await self.fetch_data("data/alarm.json")
+        self.reboot_defs = await self.fetch_data("data/reboot.json") 
             
     async def get_alarm_log(self) -> dict:
-        return await self.fetch_data(self, "alarmLog")
+        return await self.fetch_data("alarmLog")
         
     async def get_reboot_log(self) -> dict:
-        return await self.fetch_data(self, "rebootLog")
+        return await self.fetch_data("rebootLog")
 
     async def get_about_status(self) -> dict:
-        return await self.fetch_data(self, "aboutStatus")
+        return await self.fetch_data("aboutStatus")

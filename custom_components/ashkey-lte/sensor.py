@@ -7,10 +7,11 @@ from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
 from homeassistant.helpers.entity import EntityCategory
 from homeassistant.exceptions import ConfigEntryNotReady
+from datetime import timedelta
 import logging
 import asyncio
 
-from .const import DOMAIN, DEFAULT_SCAN_INTERVAL
+from .const import DOMAIN DEFAULT_SCAN_INTERVAL
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -49,7 +50,7 @@ async def async_setup_entry(
         _LOGGER,
         name="ashkey-lte sensor",
         update_method=async_update_data,
-        update_interval=DEFAULT_SCAN_INTERVAL
+        interval = timedelta(seconds=DEFAULT_SCAN_INTERVAL),
     )
 
     await coordinator.async_config_entry_first_refresh()

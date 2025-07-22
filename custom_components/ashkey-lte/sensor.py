@@ -1,103 +1,78 @@
+from __future__ import annotations
+
 from homeassistant.components.sensor import SensorEntity
-from homeassistant.helpers.update_coordinator import (
-    CoordinatorEntity,
-    DataUpdateCoordinator
-)
-from homeassistant.helpers.event import async_call_later
-from datetime import timedelta
+from homeassistant.config_entries import ConfigEntry
+from homeassistant.core import HomeAssistant
+from homeassistant.helpers.entity_platform import AddEntitiesCallback
+from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
+from homeassistant.helpers.entity import EntityCategory
+from homeassistant.exceptions import ConfigEntryNotReady
 import logging
-from .const import DOMAIN, DEFAULT_SCAN_INTERVAL
+import asyncio
+
+from .const import DOMAIN
 
 _LOGGER = logging.getLogger(__name__)
 
-async def async_setup_entry(hass, config_entry, async_add_entities):
+async def async_setup_entry(
+    hass: HomeAssistant,
+    entry: ConfigEntry,
+    async_add_entities: AddEntitiesCallback
+) -> None:
     api = hass.data[DOMAIN]["api"]
 
     async def async_update_data():
-        sim = api.fetch_data("simStatus")
-        advanced = api.fetch_data("advanced")
-        devices = api.fetch_data("devices")
-        gps = api.fetch_data("gps")
-        perf = api.fetch_data("performance")
-        about = api.fetch_data("aboutStatus")
-        alarm_data = api.fetch_data("alarmLog")
-        reboot_data = api.fetch_data("rebootLog")
+        try:
+            alarm_data = await api.get_alarm_log()
+            reboot_data = await api.get_reboot_log()
+            about_data = await api.get_about_status()
 
-        latest_alarm = alarm_data.get("alarmHistoryList", [{}])[-1]
-        latest_reboot = reboot_data.get("rebootHistoryList", [{}])[-1]
+            latest_alarm = alarm_data.get("alarmHistoryList", [{}])[-1]
+            latest_reboot = reboot_data.get("rebootHistoryList", [{}])[-1]
 
-        alarm_defs = hass.data[DOMAIN]["alarm_defs"]
-        reboot_defs = hass.data[DOMAIN]["reboot_defs"]
-        alarm_detail = alarm_defs.get(latest_alarm.get("alarmId"), {})
-        reboot_reason = reboot_defs.get(str(latest_reboot.get("rebootReason")), {}).get("rebootReason", "Unknown")
-
-        # Fire events if changed
-        if latest_alarm != hass.data[DOMAIN]["last_alarm"]:
-            hass.bus.async_fire("ashkey_alarm_event", {**latest_alarm, **alarm_detail})
+            # Store for other use if needed
             hass.data[DOMAIN]["last_alarm"] = latest_alarm
-
-        if latest_reboot != hass.data[DOMAIN]["last_reboot"]:
-            hass.bus.async_fire("ashkey_reboot_event", {**latest_reboot, "reason": reboot_reason})
             hass.data[DOMAIN]["last_reboot"] = latest_reboot
 
-        current_bw = perf.get("CurrentBandWidth", [])[-1] if perf.get("CurrentBandWidth") else {}
-        hourly_bw = perf.get("HourlyBandWidth", [])[-1] if perf.get("HourlyBandWidth") else {}
-        gps_qualities = gps.get("HourlySatelliteQualities", [])[-1] if gps.get("HourlySatelliteQualities") else {}
+            return {
+                "alarm": latest_alarm,
+                "reboot": latest_reboot,
+                "about": about_data
+            }
 
-        return {
-            "gps_status": sim.get("gpsStatus"),
-            "macAddress": sim.get("macAddress"),
-            "serial": sim.get("serial"),
-            "bhIpv4Addr": sim.get("bhIpv4Addr"),
-            "lati": sim.get("lati"),
-            "longi": sim.get("longi"),
-            "FourGsignal": sim.get("FourGsignal"),
-            "uptime": sim.get("uptime"),
-            "operationMode": sim.get("operationMode"),
-            "txPower": advanced.get("txPower"),
-            "earfcn": advanced.get("earfcn"),
-            "pci": advanced.get("pci"),
-            "activeUECountTot": devices.get("activeUECountTot"),
-            "peakCapacityUsedLastHourTot": devices.get("peakCapacityUsedLastHourTot"),
-            "gps_satellite_count": len(gps.get("GpsList", [])),
-            "gps_satellite_avg_quality": gps_qualities.get("Avg"),
-            "gps_satellite_max_quality": gps_qualities.get("Max"),
-            "gps_satellite_min_quality": gps_qualities.get("Min"),
-            "current_uplink": current_bw.get("Uplink"),
-            "current_downlink": current_bw.get("Downlink"),
-            "hourly_uplink": hourly_bw.get("Uplink"),
-            "hourly_downlink": hourly_bw.get("Downlink"),
-            "last_alarm_name": latest_alarm.get("alarmName"),
-            "last_alarm_time": latest_alarm.get("alarmTime"),
-            "last_alarm_severity": alarm_detail.get("troubleshooting"),
-            "last_reboot_reason": reboot_reason,
-            "last_reboot_time": latest_reboot.get("rebootTime"),
-            "lcd_page_event": about.get("lcdDisplay", {}).get("pageEvent"),
-            "lcd_datetime": about.get("lcdDisplay", {}).get("datetime"),
-        }
+        except Exception as err:
+            _LOGGER.exception("Unexpected error fetching ashkey-lte data")
+            raise UpdateFailed(f"Error communicating with ASHKEY API: {err}") from err
 
     coordinator = DataUpdateCoordinator(
         hass,
         _LOGGER,
-        name="ashkey-lte",
+        name="ashkey-lte sensor",
         update_method=async_update_data,
-        update_interval=timedelta(seconds=DEFAULT_SCAN_INTERVAL),
+        update_interval=entry.options.get("scan_interval", 30)
     )
 
     await coordinator.async_config_entry_first_refresh()
 
-    entities = []
-    for key, label in coordinator.data.items():
-        entities.append(AshkeyLTESensor(coordinator, key, label))
+    entities = [
+        AshkeySensor(coordinator, "Last Alarm", "alarmName", "alarm"),
+        AshkeySensor(coordinator, "Last Reboot", "rebootReason", "reboot"),
+        AshkeySensor(coordinator, "Uptime", "uptime", "about"),
+        AshkeySensor(coordinator, "GPS Status", "gpsStatus", "about")
+    ]
+
     async_add_entities(entities)
 
-class AshkeyLTESensor(CoordinatorEntity, SensorEntity):
-    def __init__(self, coordinator, key, name):
-        super().__init__(coordinator)
-        self._key = key
-        self._attr_name = name
-        self._attr_unique_id = f"ashkey-lte_{key}"
+class AshkeySensor(SensorEntity):
+    def __init__(self, coordinator, name, key, section):
+        self.coordinator = coordinator
+        self._attr_name = f"ASHKEY LTE {name}"
+        self._attr_unique_id = f"ashkey_{section}_{key}"
+        self.key = key
+        self.section = section
+        self._attr_entity_category = EntityCategory.DIAGNOSTIC
 
     @property
     def native_value(self):
-        return self.coordinator.data.get(self._key)
+        data = self.coordinator.data.get(self.section, {})
+        return data.get(self.key)

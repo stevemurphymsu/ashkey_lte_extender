@@ -15,8 +15,8 @@ from .api import AshkeyLTEApi
 _LOGGER = logging.getLogger(__name__)
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
-    ip = entry.data["ip_address"]
-    password = entry.data["password"]
+    ip = entry.data.get("ip_address")
+    password = entry.data.get("password")
 
     session = async_get_clientsession(hass)
     api = AshkeyLTEApi(ip, password, session)
@@ -53,6 +53,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         try:
             await asyncio.wait_for(api.authenticate(), timeout=10)
             hass.data[DOMAIN]["auth_token"] = api.token
+            _LOGGER.debug("ASHKEY token refreshed successfully")
         except Exception as e:
             _LOGGER.warning("ASHKEY refresh_token service failed: %s", e)
 
@@ -61,6 +62,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
             await asyncio.wait_for(api.cache_metadata(), timeout=10)
             hass.data[DOMAIN]["alarm_defs"] = api.alarm_defs
             hass.data[DOMAIN]["reboot_defs"] = api.reboot_defs
+            _LOGGER.debug("ASHKEY metadata reloaded successfully")
         except Exception as e:
             _LOGGER.warning("ASHKEY reload_metadata service failed: %s", e)
 

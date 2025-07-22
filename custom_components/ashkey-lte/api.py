@@ -1,6 +1,10 @@
 import time
 from aiohttp import ClientSession
 from .const import BASE_URL_TEMPLATE, METADATA_PATHS
+import json
+import logging
+
+_LOGGER = logging.getLogger(__name__)
 
 class AshkeyLTEApi:
     def __init__(self, ip, password, session: ClientSession):
@@ -35,6 +39,7 @@ class AshkeyLTEApi:
         if not self.token or time.time() >= self.token_expiry:
             await self.authenticate()
 
+
     async def fetch_data(self, endpoint):
         await self.ensure_auth()
         headers = {
@@ -44,15 +49,16 @@ class AshkeyLTEApi:
         }
         cookies = {"X-XSRF-TOKEN": self.xsrf} if self.xsrf else {}
 
-        async with self.session.get(self.base_url(endpoint), headers=headers, cookies=cookies) as response:
-            if response.status == 200:
-                try:
+        try:
+            async with self.session.get(self.base_url(endpoint), headers=headers, cookies=cookies) as response:
+                if response.status == 200:
                     text = await response.text()
-                    import json
                     return json.loads(text)
-                except Exception as e:
-                    _LOGGER.warning("ASHKEY: Failed to decode JSON from %s: %s", endpoint, e)
+                else:
+                    _LOGGER.warning("ASHKEY: Bad response %s for endpoint %s", response.status, endpoint)
                     return {}
+        except Exception as e:
+            _LOGGER.error("ASHKEY: Exception while fetching %s: %s", endpoint, e)
             return {}
 
     async def cache_metadata(self):

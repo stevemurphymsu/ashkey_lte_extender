@@ -1,7 +1,6 @@
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.typing import ConfigType
-from homeassistant.helpers import platform
 
 from .const import DOMAIN
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
@@ -31,7 +30,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         "last_reboot": None
     }
 
-    await platform.async_forward_entry_setup(hass, entry, "sensor")
+    await hass.config_entries.async_forward_entry_setups(hass, entry, "sensor")
 
     async def handle_refresh(call):
         await api.authenticate()

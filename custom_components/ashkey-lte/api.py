@@ -1,11 +1,12 @@
-import requests
 import time
+from aiohttp import ClientSession
 from .const import BASE_URL_TEMPLATE, METADATA_PATHS
 
 class AshkeyLTEApi:
-    def __init__(self, ip, password):
+    def __init__(self, ip, password, session: ClientSession):
         self.ip = ip
         self.password = password
+        self.session = session
         self.token = None
         self.xsrf = None
         self.token_expiry = 0
@@ -15,38 +16,40 @@ class AshkeyLTEApi:
     def base_url(self, path=""):
         return f"{BASE_URL_TEMPLATE.format(ip=self.ip)}/{path}"
 
-    def authenticate(self):
+    async def authenticate(self):
+        expires_ts = str(int((time.time() + 1800) * 1000)) + "^"
         payload = {
-            "expires": "1755791190659^",  # placeholder expiry
+            "expires": expires_ts,
             "password": self.password
         }
-        response = requests.post(self.base_url("login"), json=payload)
-        if response.ok:
-            data = response.json()
-            self.token = data.get("authtoken")
-            self.token_expiry = int(time.time()) + 1800
-            self.xsrf = response.cookies.get("X-XSRF-TOKEN")
+        async with self.session.post(self.base_url("login"), json=payload) as response:
+            if response.status == 200:
+                data = await response.json()
+                self.token = data.get("authtoken")
+                self.token_expiry = int(time.time()) + 1800
+                self.xsrf = response.cookies.get("X-XSRF-TOKEN")
 
-    def ensure_auth(self):
+    async def ensure_auth(self):
         if not self.token or time.time() >= self.token_expiry:
-            self.authenticate()
+            await self.authenticate()
 
-    def fetch_data(self, endpoint):
-        self.ensure_auth()
+    async def fetch_data(self, endpoint):
+        await self.ensure_auth()
         headers = {
             "Authtoken": self.token,
             "Content-Type": "application/json",
             "X-Requested-With": "XMLHttpRequest"
         }
         cookies = {"X-XSRF-TOKEN": self.xsrf} if self.xsrf else {}
-        url = self.base_url(endpoint)
-        response = requests.get(url, headers=headers, cookies=cookies)
-        if response.status_code == 401:
-            self.authenticate()
-            headers["Authtoken"] = self.token
-            response = requests.get(url, headers=headers, cookies=cookies)
-        return response.json() if response.ok else {}
 
-    def cache_metadata(self):
-        self.alarm_defs = self.fetch_data(METADATA_PATHS["alarms"])
-        self.reboot_defs = self.fetch_data(METADATA_PATHS["reboots"])
+        async with self.session.get(self.base_url(endpoint), headers=headers, cookies=cookies) as response:
+            if response.status == 401:
+                await self.authenticate()
+                headers["Authtoken"] = self.token
+                async with self.session.get(self.base_url(endpoint), headers=headers, cookies=cookies) as retry_response:
+                    return await retry_response.json() if retry_response.status == 200 else {}
+            return await response.json() if response.status == 200 else {}
+
+    async def cache_metadata(self):
+        self.alarm_defs = await self.fetch_data(METADATA_PATHS["alarms"])
+        self.reboot_defs = await self.fetch_data(METADATA_PATHS["reboots"])

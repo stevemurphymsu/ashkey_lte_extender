@@ -14,7 +14,9 @@ class AshkeyLTEApi:
         self.reboot_defs = {}
 
     def base_url(self, path=""):
-        return f"{BASE_URL_TEMPLATE.format(ip=self.ip)}/{path}"
+        if path.startswith("data/"):
+            return f"http://{self.ip}/{path}"  # direct root path
+        return f"http://{self.ip}/webapi/{path}"
 
     async def authenticate(self):
         expires_ts = str(int((time.time() + 1800) * 1000)) + "^"

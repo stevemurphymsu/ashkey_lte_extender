@@ -1,0 +1,9 @@
+{
+  "domain": "ashkey_lte",
+  "name": "ASHKEY LTE Network Extender",
+  "documentation": "https://your-docs-url.com",
+  "version": "0.1",
+  "requirements": [],
+  "codeowners": ["@yourgithub"],
+  "iot_class": "local_polling"
+}

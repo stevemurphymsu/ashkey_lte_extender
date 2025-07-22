@@ -1,0 +1,19 @@
+title: ASHKEY LTE Overview
+type: vertical-stack
+cards:
+  - type: entities
+    title: Device Identity
+    entities:
+      - sensor.ashkey_lte_macaddress
+      - sensor.ashkey_lte_serial
+      - sensor.ashkey_lte_bhipv4addr
+      - sensor.ashkey_lte_swver
+      - sensor.ashkey_lte_uptime
+  - type: entities
+    title: LTE Connection
+    entities:
+      - sensor.ashkey_lte_operationmode
+      - sensor.ashkey_lte_fourgsignal
+      - sensor.ashkey_lte_txpower
+      - sensor.ashkey_lte_earfcn
+      - sensor.ashkey_lte_pci

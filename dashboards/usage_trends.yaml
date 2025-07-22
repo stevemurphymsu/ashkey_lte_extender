@@ -1,0 +1,22 @@
+title: Usage Trends
+type: 'custom:apexcharts-card'
+graph_span: 24h
+header:
+  show: true
+  title: Hourly Capacity Used
+series:
+  - entity: sensor.ashkey_hourly_capacity
+    type: column
+    color_thresholds:
+      - value: 20
+        color: '#90CAF9'
+      - value: 40
+        color: '#1E88E5'
+      - value: 60
+        color: '#1565C0'
+      - value: 80
+        color: '#0D47A1'
+    data_generator: |
+      return Object.entries(entity.attributes).map(([hour, value]) => {
+        return [hour + ":00", parseFloat(value)];
+      });

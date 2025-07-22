@@ -1,0 +1,16 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Connect to ASHKEY LTE",
+        "description": "Enter your extender's IP and password"
+      }
+    },
+    "error": {
+      "cannot_connect": "Could not connect to device"
+    },
+    "abort": {
+      "already_configured": "This device is already configured"
+    }
+  }
+}

@@ -1,0 +1,16 @@
+automation:
+  - alias: Update ASHKEY Hourly Capacity
+    trigger:
+      - platform: time_pattern
+        minutes: "0"
+    variables:
+      hour: "{{ now().strftime('%H') }}"
+      attr_name: "{{ hour ~ ':00' }}"
+      capacity: "{{ state_attr('sensor.ashkey_hourly_capacity', attr_name) | float }}"
+      target_input: "input_number.ashkey_hour_{{ hour }}"
+    action:
+      - service: input_number.set_value
+        target:
+          entity_id: "{{ target_input }}"
+        data:
+          value: "{{ capacity }}"

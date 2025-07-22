@@ -1,0 +1,9 @@
+{
+  "name": "ASHKEY LTE Network Extender",
+  "content_in_root": false,
+  "domain": "ashkey_lte",
+  "homeassistant": "2024.6.0",
+  "render_readme": true,
+  "country": "us",
+  "category": "integration"
+}

@@ -1,0 +1,9 @@
+DOMAIN = "ashkey_lte"
+BASE_URL_TEMPLATE = "http://{ip}/webapi"
+METADATA_PATHS = {
+    "alarms": "data/alarm.json",
+    "reboots": "data/reboot.json"
+}
+DEFAULT_SCAN_INTERVAL = 30  # seconds
+EVENT_ALARM = "ashkey_alarm_event"
+EVENT_REBOOT = "ashkey_reboot_event"

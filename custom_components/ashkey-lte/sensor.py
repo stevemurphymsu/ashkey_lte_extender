@@ -11,7 +11,7 @@ from datetime import timedelta
 import logging
 import asyncio
 
-from .const import DOMAIN DEFAULT_SCAN_INTERVAL
+from .const import DOMAIN, DEFAULT_SCAN_INTERVAL
 
 _LOGGER = logging.getLogger(__name__)
 

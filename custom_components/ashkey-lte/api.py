@@ -45,12 +45,15 @@ class AshkeyLTEApi:
         cookies = {"X-XSRF-TOKEN": self.xsrf} if self.xsrf else {}
 
         async with self.session.get(self.base_url(endpoint), headers=headers, cookies=cookies) as response:
-            if response.status == 401:
-                await self.authenticate()
-                headers["Authtoken"] = self.token
-                async with self.session.get(self.base_url(endpoint), headers=headers, cookies=cookies) as retry_response:
-                    return await retry_response.json() if retry_response.status == 200 else {}
-            return await response.json() if response.status == 200 else {}
+            if response.status == 200:
+                try:
+                    text = await response.text()
+                    import json
+                    return json.loads(text)
+                except Exception as e:
+                    _LOGGER.warning("ASHKEY: Failed to decode JSON from %s: %s", endpoint, e)
+                    return {}
+            return {}
 
     async def cache_metadata(self):
         self.alarm_defs = await self.fetch_data(METADATA_PATHS["alarms"])

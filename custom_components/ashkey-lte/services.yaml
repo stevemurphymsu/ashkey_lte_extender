@@ -1,0 +1,9 @@
+refresh_token:
+  name: Refresh Auth Token
+  description: Re-authenticates the API and retrieves a new session token.
+  fields: {}
+
+reload_metadata:
+  name: Reload Metadata
+  description: Refreshes the cached alarm and reboot definitions from the device.
+  fields: {}

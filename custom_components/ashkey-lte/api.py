@@ -40,21 +40,19 @@ class AshkeyLTEApi:
     async def authenticate(self):
         expires_ts = str(int((time.time() + 1800) * 1000))
         try:
-            async with self.session.post(f"https://{self.ip}/webapi/login?password={self.password}&expires={expires_ts}", headers=self.headers, ssl=False) as response:
-                if response.status == 200:
-                    data = await response.json()
-                    self.token = data.get("Authtoken")
-                    self.token_expiry = data.get("expires")
-                    self.xsrf = response.cookies.get("X-XSRF-TOKEN")
-                    self.get_alarm_log = self.get_alarm_log()
-                    self.get_reboot_log = self.get_reboot_log()
-                else:
-                    _LOGGER.error("ASHKEY: Authentication failed with status %s", response.status)
-                    raise ValueError("Authentication failed")
+            async with self.session.post(f"https://{self.ip}/webapi/login?password={self.password}&expires={expires_ts}", headers=self.headers, ssl=False) as response:            
+                data = await response.json()
+                self.token = data.get("Authtoken")
+                self.token_expiry = data.get("expires")
+                self.xsrf = response.cookies.get("X-XSRF-TOKEN")
+                self.get_alarm_log = await self.get_alarm_log()
+                self.get_reboot_log = await self.get_reboot_log()
+            _LOGGER.error("ASHKEY: Authentication failed with status %s", response.status)
+            raise ValueError("Authentication failed")
         except Exception as e:
             _LOGGER.error("ASHKEY: Exception during authentication %s", e)
             return {}
-    
+        
     async def fetch_data(self, endpoint):
         try:
             async with self.session.get(self.base_url(endpoint), headers=self.headers, cookies=self.cookies, ssl=False) as response:

@@ -57,7 +57,7 @@ class AshkeyLTEApi:
     
     async def fetch_data(self, endpoint):
         try:
-            async with self.session.get(self.base_url(endpoint), headers=self.headers, cookies=self.cookies) as response:
+            async with self.session.get(self.base_url(endpoint), headers=self.headers, cookies=self.cookies, verify=False) as response:
                 if response.status == 200:
                     text = await response.text()
                     return json.loads(text)

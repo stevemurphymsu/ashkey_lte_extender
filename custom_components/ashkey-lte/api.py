@@ -47,8 +47,6 @@ class AshkeyLTEApi:
                 self.xsrf = response.cookies.get("X-XSRF-TOKEN")
                 self.alarm_log = await self.get_alarm_log()
                 self.reboot_log = await self.get_reboot_log()
-            _LOGGER.error("ASHKEY: Authentication failed with status %s", response.status)
-            raise ValueError("Authentication failed")
         except Exception as e:
             _LOGGER.error("ASHKEY: Exception during authentication %s", e)
             return {}

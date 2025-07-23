@@ -15,6 +15,7 @@ from .api import AshkeyLTEApi
 _LOGGER = logging.getLogger(__name__)
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
+    """Set up ASHKEY LTE from a config entry."""
     ip = entry.data.get("ip_address")
     password = entry.data.get("password")
 
@@ -35,7 +36,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         raise ConfigEntryNotReady("Unexpected error during setup") from unknown
 
     hass.data.setdefault(DOMAIN, {})
-    hass.data[DOMAIN] = {
+    hass.data[DOMAIN][entry.entry_id] = {  # Add entry_id to support multiple instances
         "api": api,
         "auth_token": api.token,
         "xsrf_token": api.xsrf,
@@ -45,9 +46,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         "last_reboot": None
     }
 
-    hass.async_create_task(
-        hass.config_entries.async_forward_entry_setups(entry, ["sensor"])
-    )
+    await hass.config_entries.async_forward_entry_setups(entry, ["sensor"])
 
     async def handle_refresh(call: ServiceCall) -> None:
         try:

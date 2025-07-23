@@ -7,8 +7,8 @@ from aiohttp import ClientError
 from typing import Any
 
 from homeassistant.config_entries import ConfigEntry
-from homeassistant.core import HomeAssistant, ServiceCall
-from homeassistant.exceptions import ConfigEntryNotReady
+from homeassistant.core import HomeAssistant, ServiceCall, callback
+from homeassistant.exceptions import ConfigEntryNotReady, ConfigEntryAuthFailed
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from homeassistant.helpers.update_coordinator import (
     CoordinatorEntity,
@@ -30,7 +30,6 @@ class AshkeyDataUpdateCoordinator(DataUpdateCoordinator):
             _LOGGER,
             name="ASHKEY LTE Data Coordinator",
             config_entry=config_entry,
-            name=DOMAIN,
             update_interval=timedelta(seconds=30)
         )
         self.api = api
@@ -72,21 +71,8 @@ class AshkeyDataUpdateCoordinator(DataUpdateCoordinator):
             }
         except Exception as err:
             raise UpdateFailed(f"Error communicating with API: {err}")
-        
-class MyEntity(CoordinatorEntity):
-    def __init__(self, coordinator, idx):
-        """Pass coordinator to CoordinatorEntity."""
-        super().__init__(coordinator, context=idx)
-        self.idx = idx
 
-    @callback
-    def _handle_coordinator_update(self) -> None:
-        """Handle updated data from the coordinator."""
-        #self._attr_is_on = self.coordinator.data[self.idx]["state"]
-        self.async_write_ha_state()
-    
-
-async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry, async_add_entities) -> bool:
+async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Set up ASHKEY LTE from a config entry."""
     ip = entry.data.get("ip_address")
     password = entry.data.get("password")
@@ -94,11 +80,13 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry, async_add_e
     session = async_get_clientsession(hass)
     api = AshkeyLTEApi(ip, password, session)
     coordinator = AshkeyDataUpdateCoordinator(hass, api)
-    await coordinator.async_config_entry_first_refresh()
 
-    async_add_entities(
-        MyEntity(coordinator, idx) for idx, ent in enumerate(coordinator.data)
-    )
+    await coordinator.async_config_entry_first_refresh()
+    
+    hass.data.setdefault(DOMAIN, {})[entry.entry_id] = {
+        "api": api,
+        "coordinator": coordinator
+    }
 
 async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Unload a config entry."""

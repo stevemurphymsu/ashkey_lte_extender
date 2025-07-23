@@ -54,12 +54,7 @@ class AshkeyLTEApi:
     async def fetch_data(self, endpoint):
         try:
             async with self.session.get(self.base_url(endpoint), headers=self.headers, cookies=self.cookies, ssl=False) as response:
-                if response.status == 200:
-                    text = await response.text()
-                    return json.loads(text)
-                else:
-                    _LOGGER.warning("ASHKEY: Bad response %s for endpoint %s", response.status, endpoint)
-                    return {}
+                text = await response.text()
         except Exception as e:
             _LOGGER.error("ASHKEY: Exception while fetching %s: %s", endpoint, e)
             return {}

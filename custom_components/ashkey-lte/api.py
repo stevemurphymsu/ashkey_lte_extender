@@ -40,7 +40,7 @@ class AshkeyLTEApi:
     async def authenticate(self):
         expires_ts = str(int((time.time() + 1800) * 1000))
         try:
-            async with self.session.post(f"https://{self.ip}/webapi/login?password={self.password}&expires={expires_ts}", headers=self.headers, verify=False) as response:
+            async with self.session.post(f"https://{self.ip}/webapi/login?password={self.password}&expires={expires_ts}", headers=self.headers, ssl=False) as response:
                 if response.status == 200:
                     data = await response.json()
                     self.token = data.get("Authtoken")
@@ -57,7 +57,7 @@ class AshkeyLTEApi:
     
     async def fetch_data(self, endpoint):
         try:
-            async with self.session.get(self.base_url(endpoint), headers=self.headers, cookies=self.cookies, verify=False) as response:
+            async with self.session.get(self.base_url(endpoint), headers=self.headers, cookies=self.cookies, ssl=False) as response:
                 if response.status == 200:
                     text = await response.text()
                     return json.loads(text)

@@ -22,44 +22,42 @@ class AshkeyLTEApi:
         return {
             "Content-Type": "application/json",
             "Authtoken": self.token or "",
-            "X-Requested-With": "XMLHttpRequest",
-            "Referer": f"{self.base_url}/"
+            "X-Requested-With": "XMLHttpRequest"
+        }
+
+    @property
+    def cookies(self):
+        return {
+            "X-XSRF-TOKEN": self.xsrf,
+            "Authtoken": self.token
         }
     
     def base_url(self, path=""):
         if path.startswith("data/"):
-            return f"http://{self.ip}/{path}"  # direct root path
-        return f"http://{self.ip}/webapi/{path}"
+            return f"https://{self.ip}/{path}"  # direct root path
+        return f"https://{self.ip}/webapi/{path}"
 
     async def authenticate(self):
-        expires_ts = str(int((time.time() + 1800) * 1000)) + "^"
-        payload = {
-            "expires": expires_ts,
-            "password": self.password
-        }
-        async with self.session.post(self.base_url("login"), json=payload) as response:
-            if response.status == 200:
-                data = await response.json()
-                self.token = data.get("Authtoken")
-                self.token_expiry = int(time.time()) + 1800
-                self.xsrf = response.cookies.get("X-XSRF-TOKEN")
-
-    async def ensure_auth(self):
-        if not self.token or time.time() >= self.token_expiry:
-            await self.authenticate()
-
-
-    async def fetch_data(self, endpoint):
-        await self.ensure_auth()
-        headers = {
-            "Authtoken": self.token,
-            "Content-Type": "application/json",
-            "X-Requested-With": "XMLHttpRequest"
-        }
-        cookies = {"X-XSRF-TOKEN": self.xsrf} if self.xsrf else {}
-
+        expires_ts = str(int((time.time() + 1800) * 1000))
         try:
-            async with self.session.get(self.base_url(endpoint), headers=headers, cookies=cookies) as response:
+            async with self.session.post(f"https://{self.ip}/webapi/login?password={self.password}&expires={expires_ts}", headers=self.headers, verify=False) as response:
+                if response.status == 200:
+                    data = await response.json()
+                    self.token = data.get("Authtoken")
+                    self.token_expiry = data.get("expires")
+                    self.xsrf = response.cookies.get("X-XSRF-TOKEN")
+                    self.get_alarm_log = self.get_alarm_log()
+                    self.get_reboot_log = self.get_reboot_log()
+                else:
+                    _LOGGER.error("ASHKEY: Authentication failed with status %s", response.status)
+                    raise ValueError("Authentication failed")
+        except Exception as e:
+            _LOGGER.error("ASHKEY: Exception during authentication %s", e)
+            return {}
+    
+    async def fetch_data(self, endpoint):
+        try:
+            async with self.session.get(self.base_url(endpoint), headers=self.headers, cookies=self.cookies) as response:
                 if response.status == 200:
                     text = await response.text()
                     return json.loads(text)

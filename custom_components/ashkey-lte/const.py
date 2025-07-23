@@ -1,5 +1,5 @@
 DOMAIN = "ashkey-lte"
-BASE_URL_TEMPLATE = "http://{ip}/webapi"
+BASE_URL_TEMPLATE = "https://{ip}/webapi"
 METADATA_PATHS = {
     "alarms": "data/alarm.json",
     "reboots": "data/reboot.json"

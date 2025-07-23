@@ -79,7 +79,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     
     session = async_get_clientsession(hass)
     api = AshkeyLTEApi(ip, password, session)
-    coordinator = AshkeyDataUpdateCoordinator(hass, api)
+    coordinator = AshkeyDataUpdateCoordinator(hass, entry, api)
 
     await coordinator.async_config_entry_first_refresh()
     

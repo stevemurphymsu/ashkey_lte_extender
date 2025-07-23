@@ -45,8 +45,8 @@ class AshkeyLTEApi:
                 self.token = data.get("Authtoken")
                 self.token_expiry = data.get("expires")
                 self.xsrf = response.cookies.get("X-XSRF-TOKEN")
-                self.get_alarm_log = await self.get_alarm_log()
-                self.get_reboot_log = await self.get_reboot_log()
+                self.alarm_log = await self.get_alarm_log()
+                self.reboot_log = await self.get_reboot_log()
             _LOGGER.error("ASHKEY: Authentication failed with status %s", response.status)
             raise ValueError("Authentication failed")
         except Exception as e:

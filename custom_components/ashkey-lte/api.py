@@ -1,6 +1,6 @@
 import time
 from aiohttp import ClientSession
-from .const import BASE_URL_TEMPLATE, METADATA_PATHS
+#from .const import BASE_URL_TEMPLATE, METADATA_PATHS
 import json
 import logging
 
@@ -49,12 +49,13 @@ class AshkeyLTEApi:
                 self.reboot_log = await self.get_reboot_log()
         except Exception as e:
             _LOGGER.error("ASHKEY: Exception during authentication %s", e)
-            return {}
+        return {}
         
     async def fetch_data(self, endpoint):
         try:
             async with self.session.get(self.base_url(endpoint), headers=self.headers, cookies=self.cookies, ssl=False) as response:
                 text = await response.text()
+                return json.loads(text) if response.status == 200 else {}
         except Exception as e:
             _LOGGER.error("ASHKEY: Exception while fetching %s: %s", endpoint, e)
             return {}
@@ -71,3 +72,22 @@ class AshkeyLTEApi:
 
     async def get_about_status(self) -> dict:
         return await self.fetch_data("aboutStatus")
+
+async def test_api():
+    async with ClientSession() as session:
+        ip=""
+        password=""
+        api = AshkeyLTEApi(ip, password, session)
+        await api.authenticate()
+        print(f"Alarm Codes: {api.alarm_defs}\n")
+        print(f"Reboot Codes: {api.reboot_defs}\n")
+        about = await api.get_about_status()
+        print(f"About status: {about}\n\n")
+        reboot_log = await api.get_reboot_log()
+        print(f"Reboot Log: {reboot_log}\n\n")
+        alarm_log = await api.get_alarm_log()
+        print(f"Alarm Log: {alarm_log}\n\n")
+
+if __name__ == "__main__":
+    import asyncio
+    asyncio.run(test_api())

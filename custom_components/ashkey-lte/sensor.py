@@ -28,8 +28,8 @@ async def async_setup_entry(
             reboot_data = await api.get_reboot_log()
             about_data = await api.get_about_status()
 
-            latest_alarm = alarm_data.get("alarmHistoryList", [{}])[-1]
-            latest_reboot = reboot_data.get("rebootHistoryList", [{}])[-1]
+            latest_alarm = alarm_data["alarmHistoryList"][-1]
+            latest_reboot = reboot_data["rebootHistoryList"][-1]
 
             # Store for other use if needed
             hass.data[DOMAIN]["last_alarm"] = latest_alarm
